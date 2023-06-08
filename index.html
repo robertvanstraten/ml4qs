@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        #output {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: scroll;
+        }
+        
+        #export-btn {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Button Tracker</h1>
+    
+    <div class="button-container">
+        <button id="straight-btn">Straight</button>
+        <button id="slab-btn">Slab</button>
+        <button id="overhanging-btn">Overhanging</button>
+        <button id="break-btn">Break</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <button id="export-btn">Export to CSV</button>
+    
+    <script>
+        // Array to store button press data
+        var buttonPresses = [];
+        
+        // Function to handle button click events
+        function handleClick(event) {
+            var buttonId = event.target.id;
+            var timestamp = Math.floor(Date.now() / 1000); // Epoch seconds
+            
+            buttonPresses.push({ button: buttonId, timestamp: timestamp });
+            updateOutput();
+        }
+        
+        // Function to update the output text field
+        function updateOutput() {
+            var output = document.getElementById("output");
+            output.innerHTML = "";
+            
+            buttonPresses.forEach(function(press) {
+                var line = document.createElement("p");
+                line.textContent = "Timestamp: " + press.timestamp + " | Button: " + press.button;
+                output.appendChild(line);
+            });
+        }
+        
+        // Function to export button press data to a CSV file
+        function exportToCSV() {
+            var csvContent = "data:text/csv;charset=utf-8,";
+            var header = "Timestamp,Button\n";
+            
+            buttonPresses.forEach(function(press) {
+                var row = press.timestamp + "," + press.button + "\n";
+                csvContent += row;
+            });
+            
+            var encodedURI = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedURI);
+            link.setAttribute("download", "button_presses.csv");
+            link.click();
+        }
+        
+        // Attach click event listeners to the buttons
+        document.getElementById("straight-btn").addEventListener("click", handleClick);
+        document.getElementById("slab-btn").addEventListener("click", handleClick);
+        document.getElementById("overhanging-btn").addEventListener("click", handleClick);
+        document.getElementById("break-btn").addEventListener("click", handleClick);
+        
+        // Attach click event listener to the export button
+        document.getElementById("export-btn").addEventListener("click", exportToCSV);
+    </script>
+</body>
+</html>
