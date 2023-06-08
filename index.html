@@ -20,9 +20,15 @@
         }
         
         button {
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 15px 30px;
+            font-size: 20px;
             margin: 5px;
+            background-color: #ccc;
+        }
+        
+        button.selected {
+            background-color: #4CAF50;
+            color: white;
         }
         
         #output {
@@ -37,12 +43,35 @@
         #export-btn {
             display: block;
             margin: 0 auto;
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 15px 30px;
+            font-size: 20px;
             background-color: #4CAF50;
             color: white;
             border: none;
             cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        #delete-btn {
+            display: block;
+            margin: 0 auto;
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #FF0000;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        @media screen and (max-width: 480px) and (orientation: portrait) {
+            .button-container {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            button {
+                width: 40%;
+            }
         }
     </style>
 </head>
@@ -54,13 +83,33 @@
         <button id="slab-btn">Slab</button>
         <button id="overhanging-btn">Overhanging</button>
         <button id="break-btn">Break</button>
+        <button id="falling-btn">Falling</button>
+        <button id="lowering-btn">Lowering</button>
     </div>
     
     <div id="output"></div>
     
     <button id="export-btn">Export to CSV</button>
+    <button id="delete-btn">Delete Output  </button>
     
     <script>
+
+        function saveToCookie() {
+            var expires = new Date();
+            expires.setTime(expires.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days expiration
+
+            var data = JSON.stringify(buttonPresses);
+            document.cookie = "buttonPresses=" + encodeURIComponent(data) + ";expires=" + expires.toUTCString() + ";path=/";
+        }
+
+        // Function to load button press data from a cookie
+        function loadFromCookie() {
+            var cookie = document.cookie.replace(/(?:(?:^|.*;\s*)buttonPresses\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+            if (cookie) {
+                buttonPresses = JSON.parse(decodeURIComponent(cookie));
+                updateOutput();
+            }
+        }
         // Array to store button press data
         var buttonPresses = [];
         
@@ -71,6 +120,15 @@
             
             buttonPresses.push({ button: buttonId, timestamp: timestamp });
             updateOutput();
+
+            // Remove selected class from all buttons
+            var buttons = document.querySelectorAll('.button-container button');
+            buttons.forEach(function(button) {
+                button.classList.remove('selected');
+            });
+
+            // Add selected class to the clicked button
+            event.target.classList.add('selected');
         }
         
         // Function to update the output text field
@@ -83,6 +141,7 @@
                 line.textContent = "Timestamp: " + press.timestamp + " | Button: " + press.button;
                 output.appendChild(line);
             });
+            saveToCookie();
         }
         
         // Function to export button press data to a CSV file
@@ -101,15 +160,30 @@
             link.setAttribute("download", "button_presses.csv");
             link.click();
         }
+
+        // Function to delete the output and clear the buttonPresses array
+        function deleteOutput() {
+            if (confirm("Are you sure you want to delete the output?")) {
+                buttonPresses = [];
+                updateOutput();
+            }
+        }
         
         // Attach click event listeners to the buttons
         document.getElementById("straight-btn").addEventListener("click", handleClick);
         document.getElementById("slab-btn").addEventListener("click", handleClick);
         document.getElementById("overhanging-btn").addEventListener("click", handleClick);
         document.getElementById("break-btn").addEventListener("click", handleClick);
+        document.getElementById("falling-btn").addEventListener("click", handleClick);
+        document.getElementById("lowering-btn").addEventListener("click", handleClick);
         
         // Attach click event listener to the export button
         document.getElementById("export-btn").addEventListener("click", exportToCSV);
+
+        // Attach click event listener to the delete button
+        document.getElementById("delete-btn").addEventListener("click", deleteOutput);
+        loadFromCookie();
+        window.addEventListener("beforeunload", saveToCookie);
     </script>
 </body>
 </html>
