@@ -157,4 +157,4 @@ if __name__ == "__main__":
     data = load_data(experiment)
     xml_data = load_xml(experiment)
     merged_df = merge(data, xml_data)
-    merged_df.to_csv(experiment + "merged.csv")
+    merged_df.to_csv(experiment + "merged/merged.csv")
