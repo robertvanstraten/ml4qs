@@ -4,7 +4,10 @@ from datetime import datetime
 ## Loading in the data from data/experiments/experiment_1, which contains button_presses.csv for the labels, and other csv files for the features. In experiments_1/meta we have the system time and the device info
 import numpy as np
 import pandas as pd
+from scipy.spatial.transform import Rotation as R
 import os
+import math
+from tqdm import trange
 
 
 def load_data(path, within_range=True, temp_features=True):
@@ -96,7 +99,7 @@ def convert_timestamp(timestamp):
 
 
 # Load the xml file into a dataframe
-def load_xml(path, convert_time=True):
+def load_xml(path, convert_time=False):
     # Parse the XML file
     tree = ET.parse(path + "activity_11340269258.tcx")
     root = tree.getroot()
@@ -152,9 +155,88 @@ def merge(data, xml_data):
     return merged_df
 
 
+def state_transition(x, w, dt):
+    return x + dt * w
+
+
+def observation_model(x):
+    return [
+        math.sin(x[0]),
+        -math.cos(x[0]) * math.sin(x[1]),
+        -math.cos(x[0]) * math.cos(x[1]),
+    ]
+
+
+def jacobian_state_transition():
+    return np.eye(3)
+
+
+def jacobian_observation(x):
+    return np.array(
+        [
+            [math.cos(x[0]), 0],
+            [
+                math.sin(x[0]) * math.sin(x[1]),
+                -math.cos(x[0]) * math.cos(x[1]),
+            ],
+            [math.sin(x[0]) * math.cos(x[1]), math.cos(x[0]) * math.sin(x[1])],
+        ]
+    )
+
+
 if __name__ == "__main__":
     experiment = "data/experiments/experiment_2/"
-    data = load_data(experiment)
-    xml_data = load_xml(experiment)
-    merged_df = merge(data, xml_data)
-    merged_df.to_csv(experiment + "merged/merged.csv")
+    # data = load_data(experiment)
+    # xml_data = load_xml(experiment)
+    # df = merge(data, xml_data)
+
+    df = pd.read_csv(experiment + "merged/merged.csv", index_col=0)
+
+    # Create placeholders for roll, pitch and yaw
+    roll, pitch, yaw = (
+        np.zeros(df.shape[0]),
+        np.zeros(df.shape[0]),
+        np.zeros(df.shape[0]),
+    )
+
+    for i, (_, row) in enumerate(df.iterrows()):
+        if (
+            row[
+                [
+                    "X (rad/s)",
+                    "Y (rad/s)",
+                    "Z (rad/s)",
+                    "X (m/s^2)",
+                    "Y (m/s^2)",
+                    "Z (m/s^2)",
+                ]
+            ]
+            .isnull()
+            .any()
+        ):
+            continue
+        ax, ay, az = row["X (m/s^2)"], row["Y (m/s^2)"], row["Z (m/s^2)"]
+        gx, gy, gz = row["X (rad/s)"], row["Y (rad/s)"], row["Z (rad/s)"]
+
+        # Calculate pitch and roll using formulas provided in previous answers
+        pitch[i] = math.atan2(ay, az)
+        roll[i] = math.atan2(-ax, math.sqrt(ay**2 + az**2))
+
+        # Compute the yaw by integrating gyroscope data
+        if (
+            i == 0
+        ):  # if it's the first observation, there's no previous yaw and time
+            yaw[i] = 0
+        else:
+            yaw[i] = yaw[i - 1] + gz * (
+                row["Time (s).1"] - df.iloc[i - 1]["Time (s).1"]
+            )  # integrate using the trapezoidal rule
+
+    # Convert radians to degrees
+    roll, pitch, yaw = np.degrees(roll), np.degrees(pitch), np.degrees(yaw)
+
+    # Add roll, pitch, and yaw to the DataFrame
+    df["Roll (°)"] = roll
+    df["Pitch (°)"] = pitch
+    df["Yaw (°)"] = yaw
+    df.to_csv(experiment + "merged/added_features.csv")
