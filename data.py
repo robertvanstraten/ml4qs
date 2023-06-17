@@ -46,13 +46,14 @@ def load_data(path, within_range=True, temp_features=True):
     )
     labels["Timestamp"] = pd.to_datetime(labels["Timestamp"], unit="s")
 
-    # Filter timestamps within label range
-    first_label_timestamp = labels["Timestamp"].iloc[0]
-    last_label_timestamp = labels["Timestamp"].iloc[-1]
-    data_resampled = data_resampled[
-        (data_resampled.index >= first_label_timestamp)
-        & (data_resampled.index <= last_label_timestamp)
-    ]
+    if filter:
+        # Filter timestamps within label range
+        first_label_timestamp = labels["Timestamp"].iloc[0]
+        last_label_timestamp = labels["Timestamp"].iloc[-1]
+        data_resampled = data_resampled[
+            (data_resampled.index >= first_label_timestamp)
+            & (data_resampled.index <= last_label_timestamp)
+        ]
 
     if len(data_resampled):
         # Add labels
@@ -62,32 +63,33 @@ def load_data(path, within_range=True, temp_features=True):
         data_resampled["Label"] = data_resampled.apply(
             get_recent_label, axis=1
         )
+        
+        if temp_features:
+            # Add temporal label features
+            def get_time_until_next(row):
+                next_label = labels[labels["Timestamp"] > row.name][
+                    "Timestamp"
+                ].min()
+                if pd.isnull(next_label):
+                    return pd.NaT
+                else:
+                    return (next_label - row.name).total_seconds()
 
-        # Add temporal label features
-        def get_time_until_next(row):
-            next_label = labels[labels["Timestamp"] > row.name][
-                "Timestamp"
-            ].min()
-            if pd.isnull(next_label):
-                return pd.NaT
-            else:
-                return (next_label - row.name).total_seconds()
+            def get_time_since_previous(row):
+                previous_label = labels[labels["Timestamp"] < row.name][
+                    "Timestamp"
+                ].max()
+                if pd.isnull(previous_label):
+                    return pd.NaT
+                else:
+                    return (row.name - previous_label).total_seconds()
 
-        def get_time_since_previous(row):
-            previous_label = labels[labels["Timestamp"] < row.name][
-                "Timestamp"
-            ].max()
-            if pd.isnull(previous_label):
-                return pd.NaT
-            else:
-                return (row.name - previous_label).total_seconds()
-
-        data_resampled["Time_Until_Next_Label"] = data_resampled.apply(
-            get_time_until_next, axis=1
-        )
-        data_resampled["Time_Since_Previous_Label"] = data_resampled.apply(
-            get_time_since_previous, axis=1
-        )
+            data_resampled["Time_Until_Next_Label"] = data_resampled.apply(
+                get_time_until_next, axis=1
+            )
+            data_resampled["Time_Since_Previous_Label"] = data_resampled.apply(
+                get_time_since_previous, axis=1
+            )
 
     return data_resampled
 
@@ -131,6 +133,9 @@ def load_xml(path, convert_time=False):
 
     # Create a DataFrame from the extracted data
     df = pd.DataFrame(xml_data)
+
+    df['AltitudeMeters'] = df['AltitudeMeters'].astype(float)
+    df['HeartRate'] = df['HeartRate'].astype(float)
 
     # Apply the conversion function to the 'Time' column
     if convert_time:
