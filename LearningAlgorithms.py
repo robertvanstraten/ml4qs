@@ -35,7 +35,7 @@ class ClassificationAlgorithms:
     # To improve the speed, one can use a CV of 3 only to make it faster
     # Furthermore, you decrease the number of iteration and increase the learning rate, i.e. 0.001 and use 'adam' as a solver
     # Include n_jobs in the GridSearchCV function and set it to -1 to use all processors which could also increase the speed
-    def feedforward_neural_network(self, train_X, train_y, test_X, hidden_layer_sizes=(100,), max_iter=500, activation='logistic', alpha=0.0001, learning_rate='adaptive', gridsearch=True, print_model_details=False):
+    def feedforward_neural_network(self, train_X, train_y, test_X, hidden_layer_sizes=(100,), max_iter=500, activation='logistic', alpha=0.0001, learning_rate='adaptive', gridsearch=True, print_model_details=True):
 
 
         if gridsearch:
@@ -72,7 +72,7 @@ class ClassificationAlgorithms:
     # probabilities associated with each class, each class being represented as a column in the data frame.
     # To improve the speed, one can use a CV of 3 only to make it faster
     # Include n_jobs in the GridSearchCV function and set it to -1 to use all processors which could also increase the speed
-    def support_vector_machine_with_kernel(self, train_X, train_y, test_X, C=1,  kernel='rbf', gamma=1e-3, gridsearch=True, print_model_details=False):
+    def support_vector_machine_with_kernel(self, train_X, train_y, test_X, C=1,  kernel='rbf', gamma=1e-3, gridsearch=True, print_model_details=True):
         # Create the model
         if gridsearch:
             tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],

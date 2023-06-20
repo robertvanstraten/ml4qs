@@ -11,6 +11,7 @@ from sklearn.decomposition import PCA
 
 import util.util as util
 from scipy.signal import butter, lfilter, filtfilt
+import numpy as np
 
 # This class removes the high frequency data (that might be considered noise) from the data.
 class LowPassFilter:
@@ -45,8 +46,12 @@ class PrincipalComponentAnalysis:
         # perform the PCA.
         self.pca = PCA(n_components = len(cols))
         self.pca.fit(dt_norm[cols])
+        
+        loadings = self.pca.components_
+        feature_importances = np.abs(loadings).sum(axis=0)
+
         # And return the explained variances.
-        return self.pca.explained_variance_ratio_
+        return self.pca.explained_variance_ratio_, feature_importances
 
     # Apply a PCA given the number of components we have selected.
     # We add new pca columns.
@@ -56,7 +61,7 @@ class PrincipalComponentAnalysis:
 
         # perform the PCA.
         self.pca = PCA(n_components = number_comp)
-        self.pca.fit(dt_norm[cols])
+        self.pca.fit(dt_norm[cols])        
 
         # Transform our old values.
         new_values = self.pca.transform(dt_norm[cols])
